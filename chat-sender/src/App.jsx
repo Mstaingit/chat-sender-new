@@ -21,11 +21,6 @@ function App() {
           <Route path="/home" element={<Home />} />
           <Route path="/chat" element={<AChat />} />
           <Route path="/login" element={<Login />} />
-          
-          
-         
-         
-         
         </Routes>
       </BrowserRouter>
      

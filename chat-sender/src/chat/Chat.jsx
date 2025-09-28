@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ref as dbRef, onValue, update, get } from "firebase/database";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { doc, updateDoc, arrayUnion, Timestamp } from "firebase/firestore"; // Add these imports 
+import { doc, updateDoc, arrayUnion, Timestamp, getDoc, onSnapshot } from "firebase/firestore"; // Add these imports 
 import { database, storage, db } from "../firebase";
 import { toast } from "react-toastify";
 import "./chat.css";
@@ -13,7 +13,9 @@ const AChat = () => {
   const location = useLocation();
   const username = location.state?.username;
   const [userData, setUserData] = useState(null);
-   const [banStatus, setBanStatus] = useState(null);
+  const [banStatus, setBanStatus] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     if (!username) {
@@ -35,6 +37,29 @@ const AChat = () => {
 
     return () => unsubscribe();
   }, [username, navigate]);
+
+  // Load messages from Firestore
+  useEffect(() => {
+    if (!username) return;
+
+    const userDocRef = doc(db, "chat-sender", username);
+    const unsubscribe = onSnapshot(userDocRef, (doc) => {
+      if (doc.exists()) {
+        const data = doc.data();
+        if (data.messages) {
+          setMessages(data.messages);
+        } else {
+          setMessages([]);
+        }
+        setLoading(false);
+      } else {
+        setMessages([]);
+        setLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [username]);
 
    const renderStatus = () => {
     if (banStatus === 1) {
@@ -172,14 +197,74 @@ const AChat = () => {
       }
     );
   };
-  
-// __________________________________________________________________________________________________________________________________  
 
    
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
+  }, [messages]);
+
+  // Function to render messages
+  const renderMessage = (message, index) => {
+    const isOwn = message.sender === 1; // 1 means sender, 0 means receiver
+    const messageClass = isOwn ? "messege own" : "messege";
+    
+    // Format timestamp
+    const formatTime = (timestamp) => {
+      if (timestamp && timestamp.toDate) {
+        return timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+      return "now";
+    };
+
+    return (
+      <div key={index} className={messageClass}>
+        <div className={isOwn ? "texts" : "text"}>
+          {message.type === "image" ? (
+            <div>
+              <img 
+                src={message.url} 
+                alt="Uploaded image" 
+                style={{ 
+                  maxWidth: "500px", 
+                  maxHeight: "600px", 
+                  width: "100%",
+                  height: "auto",
+                  borderRadius: "10px",
+                  objectFit: "cover",
+                  cursor: "pointer"
+                }} 
+                onClick={() => window.open(message.url, '_blank')}
+              />
+              <p style={{ marginTop: "5px", fontSize: "12px", color: "#666" }}>
+                Image sent
+              </p>
+            </div>
+          ) : message.type === "video" ? (
+            <div>
+              <video 
+                src={message.url} 
+                controls 
+                style={{ 
+                  maxWidth: "500px", 
+                  maxHeight: "600px", 
+                  width: "100%",
+                  height: "auto",
+                  borderRadius: "10px"
+                }}
+              />
+              <p style={{ marginTop: "5px", fontSize: "12px", color: "#666" }}>
+                Video sent
+              </p>
+            </div>
+          ) : (
+            <p>{message.text || "Message"}</p>
+          )}
+          <span>{formatTime(message.timestamp)}</span>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="chat-container">
@@ -199,43 +284,19 @@ const AChat = () => {
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1111
 
 
-        {/* Center Section Left Untouched */}
+        {/* Center Section - Dynamic Messages */}
         <div className="center">
-          <div className="messege">
-            <div className="text">
-              <p>hello sender</p>
-              <span>15 min ago</span>
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "20px", color: "#666" }}>
+              Loading messages...
             </div>
-          </div>
-
-          <div className="messege own">
-            <div className="texts">
-              <p>hi receiver</p>
-              <span>13 min ago</span>
+          ) : messages.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "20px", color: "#666" }}>
+              No messages yet. Upload an image or video to start the conversation!
             </div>
-          </div>
-
-          <div className="messege">
-            <div className="text">
-              <p>how are you</p>
-              <span>11 min ago</span>
-            </div>
-          </div>
-
-          <div className="messege own">
-            <div className="texts">
-              <p>i am good how are you</p>
-              <span>9 min ago</span>
-            </div>
-          </div>
-
-          <div className="messege">
-            <div className="text">
-              <p>i am ok</p>
-              <span>1 min ago</span>
-            </div>
-          </div>
-
+          ) : (
+            messages.map((message, index) => renderMessage(message, index))
+          )}
           <div ref={endRef}></div>
         </div>
 

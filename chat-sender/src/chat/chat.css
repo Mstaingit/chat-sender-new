@@ -157,6 +157,21 @@ body {
   color: black;
 }
 
+.text img,
+.texts img,
+.text video,
+.texts video {
+  border-radius: 10px;
+  margin: 5px 0;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  transition: transform 0.2s ease;
+}
+
+.text img:hover,
+.texts img:hover {
+  transform: scale(1.02);
+}
+
 .text span,
 .texts span {
   color: black;
@@ -170,6 +185,26 @@ body {
 .messege.own .texts p {
   background-color: black;
   color: #dfdfdf;
+}
+
+.messege.own .texts img,
+.messege.own .texts video {
+  border: 2px solid #333;
+}
+
+/* Loading and empty state styles */
+.loading-message {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-style: italic;
+}
+
+.empty-messages {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-style: italic;
 }
 
 /* Footer Section */
@@ -228,5 +263,13 @@ body {
   .center .messege p {
     font-size: 12px;
     padding: 8px;
+  }
+
+  .text img,
+  .texts img,
+  .text video,
+  .texts video {
+    max-width: 300px;
+    max-height: 350px;
   }
 }
